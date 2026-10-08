@@ -1,0 +1,77 @@
+@import "katex/dist/katex.min.css";
+
+:root {
+  --color-cream-bg: #F8F4EC;
+  --color-cream-surface: #FFFDF9;
+  --color-cream-muted: #EFE8DA;
+  --color-cream-border: #DFD5C4;
+  --color-cream-dark-border: #C8BBA7;
+
+  --color-navy-main: #0B192C;
+  --color-navy-surface: #13243A;
+  --color-navy-muted: #1E344F;
+  --color-navy-text: #0B192C;
+  --color-navy-subtext: #2C3E55;
+
+  --color-crimson-main: #990000;
+  --color-crimson-hover: #7A0000;
+  --color-crimson-light: #F9ECEC;
+  --color-crimson-border: #990000;
+
+  --font-serif: "Georgia", "Playfair Display", serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* MANDATORY STRICT RULE: NO SHADOWS ANYWHERE */
+*, *::before, *::after {
+  box-sizing: border-box;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-cream-bg);
+  color: var(--color-navy-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* Custom Scrollbar styled strictly in Cream & Navy */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-cream-muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-navy-main);
+  border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-crimson-main);
+}
+
+/* Global Button & Input base reset */
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* KaTeX custom sizing and colors */
+.katex {
+  font-size: 1.05em;
+  color: var(--color-navy-main);
+}
+
+.katex-display {
+  margin: 0.75em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}

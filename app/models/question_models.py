@@ -9,6 +9,7 @@ class MCQQuestion(BaseModel):
     difficulty: str = Field("medium", description="Difficulty level requested (e.g., easy, medium, hard)")
     bloom_level: str = Field("apply", description="Bloom's taxonomy level requested")
     source_reference: Optional[str] = Field(None, description="Page number or section reference from source PDF")
+    source_chunk_ids: Optional[List[str]] = Field(default_factory=list, description="Identifiers of retrieved source chunks")
 
     @field_validator("options")
     @classmethod

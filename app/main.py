@@ -3,6 +3,7 @@ from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes_generation import router as generation_router, generate_mcqs
 from app.api.routes_websocket import router as websocket_router
+from app.api.routes_notes import router as notes_router
 from app.config import settings
 
 # Configure logging
@@ -14,9 +15,9 @@ logging.basicConfig(
 logger = logging.getLogger("mcq_generator")
 
 app = FastAPI(
-    title="High-Throughput AI MCQ Generation System Backend",
-    description="Backend API demonstrating parallel LLM generation to reduce latency for high-volume MCQ synthesis from PDF documents.",
-    version="1.0.0"
+    title="High-Throughput AI MCQ Generation System Backend with RAG",
+    description="Backend API demonstrating parallel LLM generation and Qdrant-backed RAG for high-volume MCQ synthesis.",
+    version="2.0.0"
 )
 
 # Enable CORS for flexible backend integration
@@ -28,11 +29,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include primary API routes
+# Include API routes
 app.include_router(generation_router)
 app.include_router(websocket_router)
+app.include_router(notes_router)
 
-# Root level alias POST /generate-mcqs as requested in section 1 of spec
+# Root level alias POST /generate-mcqs as requested in initial spec
 @app.post("/generate-mcqs", tags=["MCQ Generation"])
 async def root_generate_mcqs_alias(
     background_tasks: BackgroundTasks,
@@ -62,7 +64,7 @@ async def root_generate_mcqs_alias(
 @app.get("/", tags=["Health"])
 async def root_health():
     return {
-        "service": "High-Throughput AI MCQ Generation Backend",
+        "service": "High-Throughput AI MCQ Generation Backend with RAG",
         "status": "online",
         "docs": "/docs",
         "health": "/api/v1/health"

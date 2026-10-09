@@ -1,59 +1,68 @@
-# High-Throughput AI MCQ Generation System Backend
+# High-Throughput AI MCQ Generation System Backend with RAG & Persistent Qdrant Vector Store
 
-A high-performance, asynchronous FastAPI backend designed to demonstrate how **parallel LLM generation** significantly reduces latency when producing large batches of Multiple Choice Questions (MCQs) from an uploaded PDF study document.
-
-> **Note**: This is a backend-only project. It intentionally **does NOT use RAG**, vector databases (Chroma/Pinecone), PostgreSQL, or persistent question banks. The uploaded document serves as the sole source of truth for generation.
+A high-performance, asynchronous FastAPI backend designed to demonstrate how **parallel LLM generation** and **document-based Retrieval-Augmented Generation (RAG)** significantly reduce latency and provide grounded MCQ generation from stored study notes.
 
 ---
 
-## 🚀 Key Features & Architectural Highlights
+## 🚀 Key Features & System Capabilities
 
-1. **Parallel vs. Sequential Benchmarking**:
+1. **Persistent Document Notes Indexing (`POST /api/v1/notes/upload`)**:
+   - Upload study notes or textbooks (PDF format), extract text page-by-page, chunk semantically, embed, and store persistently in **Qdrant**.
+   - Idempotency & Deduplication: Calculates document content hashes to avoid re-embedding identical uploads.
+   - Metadata tagging: `subject` (`maths`, `chemistry`, `physics`, `biology`), optional `topic`, `document_id`, `document_title`, `page_number`, `chunk_index`.
+
+2. **RAG-based MCQ Generation (`POST /api/v1/generate-mcqs-from-notes`)**:
+   - Generates MCQs directly from indexed notes in Qdrant **without re-uploading documents**.
+   - Applies strict metadata filters (`subject` & optional `topic`).
+   - Retrieves top evidence chunks, constructs evidence packets, and allocates questions across evidence.
+
+3. **Direct Document File-Upload MCQ Generation (`POST /api/v1/generate-mcqs`)**:
+   - Preserved original single-document file-upload workflow for backward compatibility.
+
+4. **Parallel vs. Sequential Batch Orchestration**:
    - **Parallel Mode**: Generates multiple question batches concurrently using `asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)`.
-   - **Sequential Mode**: Generates batches one after another for direct latency comparison.
-   
-2. **Real-time WebSocket Streaming**:
-   - As soon as a question is validated by the pipeline, it is pushed to the client via WebSockets (`WS /api/v1/ws/generate/{job_id}`).
+   - **Sequential Mode**: Generates batches sequentially for latency benchmarking.
+
+5. **Real-time WebSocket Streaming (`WS /api/v1/ws/generate/{job_id}`)**:
+   - Emits real-time events: `retrieval_started`, `retrieval_completed`, `generation_started`, `batch_started`, `batch_completed`, `question`, `progress`, `completed`, `partial`, `error`.
    - Disconnect-resilient: Generation continues independently in background tasks; late subscribers receive missed events upon connection.
 
-3. **Multi-Layer Validation Pipeline**:
-   - **Layer 1 (Schema Validation)**: Pydantic parsing of options length, 0-3 index, and fields.
-   - **Layer 2 (Deterministic Quality Checks)**: Unique distractors, non-empty options, question length bounds.
-   - **Layer 3 (Semantic Deduplication)**: TF-IDF + Cosine Similarity comparison against previously accepted questions (configurable `DUPLICATE_SIMILARITY_THRESHOLD`).
-   - **Layer 4 (Optional LLM Quality Validator)**: Evaluates factual grounding and distractor quality (configurable via `ENABLE_LLM_VALIDATION`).
-
-4. **Guaranteed Question Count (Dynamic Over-Generation)**:
-   - If requested = 100 questions, and 8 fail validation, the orchestrator automatically triggers dynamic replacement batches until **exactly 100 valid questions** are accepted or `MAX_RETRIES` is hit.
-
-5. **Primary & Fallback Gemini LLM Support**:
-   - Primary model: `gemini-1.5-flash`
-   - Fallback model: `gemini-2.5-flash`
+6. **Multi-Layer Validation & Dynamic Over-generation**:
+   - **Layer 1**: Pydantic schema validation (`MCQQuestion`).
+   - **Layer 2**: Deterministic quality checks (4 distinct options, valid 0-3 index, reasonable length).
+   - **Layer 3**: Semantic TF-IDF deduplication across all accepted questions.
+   - **Layer 4**: Optional LLM quality validation.
+   - Dynamic bounded retries if validation rejects candidates until target count is reached.
 
 ---
 
 ## 🛠️ Project Structure
 
-```
+```text
 mcq-generator/
 │
 ├── app/
-│   ├── main.py                     # FastAPI app entry point & CORS
+│   ├── main.py                     # FastAPI app entry point & router mounting
 │   ├── config.py                   # Pydantic Settings & environment variables
 │   │
 │   ├── api/
+│   │   ├── routes_notes.py         # POST /api/v1/notes/upload & /api/v1/generate-mcqs-from-notes
 │   │   ├── routes_generation.py    # POST /api/v1/generate-mcqs & GET /api/v1/job/{job_id}
 │   │   └── routes_websocket.py     # WS /api/v1/ws/generate/{job_id}
 │   │
 │   ├── services/
-│   │   ├── document_service.py     # PyMuPDF text extraction & context capping
-│   │   ├── llm_service.py          # Google GenAI SDK async call & fallback
-│   │   ├── generation_service.py   # Async parallel & sequential orchestrator
+│   │   ├── document_service.py     # PDF text extraction & context capping
+│   │   ├── embedding_service.py    # FastEmbed / LangChain embeddings provider
+│   │   ├── vector_store_service.py # Qdrant persistent storage, indexing & filtering
+│   │   ├── rag_retrieval_service.py# RAG evidence retrieval & context preparation
+│   │   ├── llm_service.py          # Google GenAI SDK async call & model fallback
+│   │   ├── generation_service.py   # Parallel/Sequential orchestrator & RAG workflow
 │   │   ├── validation_service.py   # 4-Layer validation pipeline
 │   │   ├── duplicate_service.py    # TF-IDF & Cosine Similarity deduplication
-│   │   └── job_service.py          # In-memory job manager & listener queues
+│   │   └── job_service.py          # In-memory job manager & event broadcaster
 │   │
 │   ├── models/
-│   │   ├── request_models.py       # API parameters & metrics schema
+│   │   ├── request_models.py       # API parameter schemas & metrics
 │   │   └── question_models.py      # MCQ structured output schema
 │   │
 │   ├── prompts/
@@ -63,15 +72,15 @@ mcq-generator/
 │       └── manager.py              # WebSocket connection & streaming manager
 │
 ├── tests/
-│   ├── test_api.py                 # API & WebSocket integration tests
+│   ├── test_notes_rag.py           # RAG & notes upload API unit tests
+│   ├── test_api.py                 # File upload & WebSocket integration tests
 │   ├── test_document_service.py   # PDF text extraction tests
 │   └── test_validation.py         # Validation & deduplication tests
 │
 ├── .env                            # Environment variables (git-ignored)
 ├── .env.example                    # Template environment variables
-├── .gitignore                      # Git ignore rules
 ├── requirements.txt                # Python dependencies
-├── README.md                       # Comprehensive documentation
+├── README.md                       # Complete backend documentation
 └── run.py                          # Uvicorn server launcher
 ```
 
@@ -79,7 +88,7 @@ mcq-generator/
 
 ## ⚙️ Environment Variables (`.env`)
 
-Create a `.env` file in the root directory (refer to `.env.example`):
+Create or update `.env` in the project root directory:
 
 ```env
 # LLM Provider and Models
@@ -101,6 +110,23 @@ ENABLE_LLM_VALIDATION=false
 # Document Context Settings
 MAX_DOCUMENT_CHARS=100000
 
+# Vector Store & RAG Settings
+VECTOR_STORE_PROVIDER=qdrant
+QDRANT_URL=
+QDRANT_API_KEY=
+QDRANT_COLLECTION_NAME=study_notes
+QDRANT_PATH=./qdrant_storage
+
+EMBEDDING_PROVIDER=fastembed
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+EMBEDDING_BATCH_SIZE=64
+
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=150
+
+RETRIEVAL_TOP_K=15
+MAX_RETRIEVAL_CONTEXT_CHARS=30000
+
 # Server Settings
 HOST=0.0.0.0
 PORT=8000
@@ -108,158 +134,102 @@ PORT=8000
 
 ---
 
-## 💻 Environment Setup & Local Execution (Windows)
+## 💻 Qdrant Vector Store Setup
 
-### 1. Activate Virtual Environment
-Use the existing virtual environment:
+1. **Local Persistent Storage Mode (Default)**:
+   - If `QDRANT_URL` is left empty, the system automatically runs Qdrant in local disk-persistence mode storing vectors at `./qdrant_storage`.
+   - Vectors and metadata persist across application restarts.
+
+2. **Qdrant Cloud / Remote Server Mode**:
+   - Set `QDRANT_URL=https://your-cluster.qdrant.tech` and `QDRANT_API_KEY=your_qdrant_api_key` in `.env`.
+
+---
+
+## 📡 API Endpoints & cURL Examples
+
+### 1. Upload Study Notes (`POST /api/v1/notes/upload`)
+```bash
+curl -X POST "http://localhost:8000/api/v1/notes/upload" \
+  -F "file=@physics_notes.pdf" \
+  -F "subject=physics" \
+  -F "topic=projectile_motion" \
+  -F "document_title=Physics Chapter 1"
+```
+**Response (`201 Created`):**
+```json
+{
+  "status": "indexed",
+  "document_id": "doc_a1b2c3d4",
+  "document_title": "Physics Chapter 1",
+  "subject": "physics",
+  "topic": "projectile_motion",
+  "total_pages": 35,
+  "total_chunks": 84,
+  "message": "Document indexed successfully."
+}
+```
+
+### 2. Generate MCQs from Indexed Notes (`POST /api/v1/generate-mcqs-from-notes`)
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate-mcqs-from-notes" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "physics",
+    "topic": "projectile_motion",
+    "number_of_questions": 50,
+    "difficulty": "medium",
+    "bloom_level": "apply",
+    "question_type": "mcq"
+  }'
+```
+**Response (`202 Accepted`):**
+```json
+{
+  "job_id": "job_987654321",
+  "status": "started",
+  "total_requested": 50,
+  "websocket_path": "/api/v1/ws/generate/job_987654321"
+}
+```
+
+### 3. Direct PDF Upload MCQ Generation (`POST /api/v1/generate-mcqs`)
+```bash
+curl -X POST "http://localhost:8000/api/v1/generate-mcqs" \
+  -F "file=@notes.pdf" \
+  -F "number_of_questions=20" \
+  -F "difficulty=medium" \
+  -F "bloom_level=apply"
+```
+
+---
+
+## 📡 Realtime WebSocket Events (`WS /api/v1/ws/generate/{job_id}`)
+
+Connect client to `ws://localhost:8000/api/v1/ws/generate/{job_id}`.
+
+**Streamed Event Types**:
+
+1. `retrieval_started`: Vector search initiated.
+2. `retrieval_completed`: Chunks retrieved from Qdrant.
+3. `generation_started`: Batch orchestrator started.
+4. `batch_started`: Individual LLM generation batch started.
+5. `question`: Emitted immediately when an MCQ passes all 4 validation layers.
+6. `progress`: Periodic progress counter (`accepted_count` / `total_requested`).
+7. `completed`: Final completion event containing latency metrics.
+8. `partial`: Emitted if maximum retry budget is hit before fulfilling full requested count.
+9. `error`: Emitted if a fatal error occurs.
+
+---
+
+## 🔧 Local Server Startup (Windows)
+
+### 1. Activate Environment
 ```powershell
-# Activate on Windows PowerShell:
 .\venv\Scripts\Activate.ps1
 ```
 
-*(Or create a new environment if needed)*:
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-```
-
-### 2. Install Dependencies
-```powershell
-venv\Scripts\python.exe -m pip install -r requirements.txt
-```
-
-### 3. Run Unit & Integration Tests
-```powershell
-venv\Scripts\python.exe -m pytest -v
-```
-
-### 4. Start Backend Server
+### 2. Start Backend Server
 ```powershell
 venv\Scripts\python.exe run.py
 ```
-*Server will listen at `http://localhost:8000` (API Docs available at `http://localhost:8000/docs`).*
-
----
-
-## 📡 API Endpoints & Usage
-
-### 1. Health Check
-```http
-GET /api/v1/health
-```
-**Response:**
-```json
-{
-  "status": "ok",
-  "service": "high-throughput-mcq-generator"
-}
-```
-
-### 2. Initiate MCQ Generation Job
-```http
-POST /api/v1/generate-mcqs
-Content-Type: multipart/form-data
-```
-**Form Data:**
-- `file`: PDF file upload (e.g. `notes.pdf`)
-- `number_of_questions`: `100`
-- `difficulty`: `medium`
-- `bloom_level`: `apply`
-- `question_type`: `mcq`
-- `generation_mode` *(optional)*: `parallel` or `sequential`
-- `questions_per_batch` *(optional)*: `10`
-- `max_concurrent_requests` *(optional)*: `5`
-
-**Example Response (Immediate `202 Accepted`):**
-```json
-{
-  "job_id": "a1b2c3d4e5f6",
-  "status": "started",
-  "total_questions": 100,
-  "message": "Job initialized. Connect to WebSocket /api/v1/ws/generate/a1b2c3d4e5f6 for realtime question streaming."
-}
-```
-
-### 3. Realtime WebSocket Streaming
-Connect client to:
-```
-WS ws://localhost:8000/api/v1/ws/generate/a1b2c3d4e5f6
-```
-
-**Streamed Event Flow:**
-
-1. **Generation Started**:
-```json
-{
-  "event": "generation_started",
-  "job_id": "a1b2c3d4e5f6",
-  "total_requested": 100,
-  "generation_mode": "parallel",
-  "concurrency": 5,
-  "batch_size": 10
-}
-```
-
-2. **Incremental Question Stream (Emitted as validated)**:
-```json
-{
-  "event": "question",
-  "job_id": "a1b2c3d4e5f6",
-  "question_number": 1,
-  "question": {
-    "question": "What is the primary characteristic of superposition in quantum mechanics?",
-    "options": [
-      "A particle existing in multiple state combinations until measured",
-      "Continuous classical momentum transfer",
-      "Thermal equilibrium of subatomic particles",
-      "Static charge accumulation in insulators"
-    ],
-    "correct_option": 0,
-    "explanation": "Superposition allows quantum states to be combined until measurement collapses the wavefunction.",
-    "difficulty": "medium",
-    "bloom_level": "apply",
-    "source_reference": "Page 1"
-  }
-}
-```
-
-3. **Job Completion Event (With Detailed Metrics)**:
-```json
-{
-  "event": "completed",
-  "job_id": "a1b2c3d4e5f6",
-  "total_questions": 100,
-  "metrics": {
-    "job_id": "a1b2c3d4e5f6",
-    "requested_questions": 100,
-    "generated_candidates": 110,
-    "accepted_questions": 100,
-    "rejected_questions": 10,
-    "retries": 1,
-    "concurrency": 5,
-    "batch_size": 10,
-    "generation_mode": "parallel",
-    "extraction_time_ms": 142.5,
-    "prompt_prep_time_ms": 12.1,
-    "total_time_ms": 6820.4,
-    "time_to_first_question_ms": 1250.2,
-    "time_to_25_questions_ms": 2840.1,
-    "time_to_50_questions_ms": 4210.6,
-    "time_to_100_questions_ms": 6820.4,
-    "batch_latencies_ms": [1210.5, 1180.2, 1240.0, 1310.6, 1290.1]
-  }
-}
-```
-
----
-
-## 📊 Parallel vs. Sequential Latency Comparison
-
-To benchmark latency difference:
-
-1. **Parallel Request**: Pass `generation_mode=parallel` (or set `GENERATION_MODE=parallel` in `.env`).
-2. **Sequential Request**: Pass `generation_mode=sequential` (or set `GENERATION_MODE=sequential` in `.env`).
-
-**Observed Latency Characteristics**:
-- **Sequential**: Time scales linearly (\( T \approx N_{\text{batches}} \times T_{\text{batch}} \)). Generating 100 questions in 10 sequential batches takes \(\sim 30-40\) seconds.
-- **Parallel**: Time scales with concurrency (\( T \approx \frac{N_{\text{batches}}}{\text{concurrency}} \times T_{\text{batch}} \)). Generating 100 questions in 10 batches with `concurrency=5` takes \(\sim 6-8\) seconds.
+*Server runs at `http://localhost:8000` (Swagger UI at `http://localhost:8000/docs`).*

@@ -1,6 +1,8 @@
 import logging
+from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.api.routes_generation import router as generation_router, generate_mcqs
 from app.api.routes_websocket import router as websocket_router
 from app.api.routes_notes import router as notes_router
@@ -33,6 +35,11 @@ app.add_middleware(
 app.include_router(generation_router)
 app.include_router(websocket_router)
 app.include_router(notes_router)
+
+# Serve local biology diagram images as static files
+_images_dir = Path(__file__).resolve().parent / "data" / "images"
+_images_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/data/images", StaticFiles(directory=str(_images_dir)), name="biology_images")
 
 # Root level alias POST /generate-mcqs as requested in initial spec
 @app.post("/generate-mcqs", tags=["MCQ Generation"])

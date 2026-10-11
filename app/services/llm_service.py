@@ -39,19 +39,22 @@ class LLMService:
         batch_size: int,
         document_content: str,
         batch_index: int = 1,
-        total_batches: int = 1
+        total_batches: int = 1,
+        subject: Optional[str] = None
     ) -> List[MCQQuestion]:
         """
         Generates a batch of MCQ questions using Gemini models with fallback support.
+        `subject` is forwarded to the prompt builder for subject-specific visual instructions.
         """
-        system_prompt = build_mcq_system_prompt()
+        system_prompt = build_mcq_system_prompt(subject=subject)
         user_prompt = build_user_prompt(
             difficulty=difficulty,
             bloom_level=bloom_level,
             batch_size=batch_size,
             document_content=document_content,
             batch_index=batch_index,
-            total_batches=total_batches
+            total_batches=total_batches,
+            subject=subject
         )
 
         # 1. Try Primary Model

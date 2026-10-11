@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     RETRIEVAL_TOP_K: int = 15
     MAX_RETRIEVAL_CONTEXT_CHARS: int = 30000
 
+    # SerpAPI for biology diagram image fallback
+    SERPAPI_API_KEY: Optional[str] = None
+
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 

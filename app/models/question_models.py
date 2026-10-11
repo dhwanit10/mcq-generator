@@ -1,5 +1,45 @@
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from pydantic import BaseModel, Field, field_validator
+
+
+class VisualData(BaseModel):
+    """
+    Carries subject-specific rendering data for visual MCQ questions.
+
+    - Maths / Physics: Plotly-compatible JSON spec (layout + data traces).
+      Render with Plotly.js on the frontend.
+    - Chemistry: SMILES string for molecular structure.
+      Render with RDKit.js / SmilesDrawer on the frontend.
+    - Biology: diagram_keywords (search terms), diagram_name (canonical name),
+      and diagram_links (resolved URLs — populated by the backend after generation).
+    """
+    # Maths & Physics ─ Plotly JSON
+    plotly_spec: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Plotly-compatible JSON with 'data' (traces) and 'layout' keys. For maths/physics graphs."
+    )
+
+    # Chemistry ─ SMILES
+    smiles: Optional[str] = Field(
+        None,
+        description="SMILES string for the molecular structure. Render with SmilesDrawer.js / RDKit.js."
+    )
+
+    # Biology ─ Diagram lookup
+    diagram_name: Optional[str] = Field(
+        None,
+        description="Canonical name of the biological diagram (e.g. 'Stages of Mitosis')."
+    )
+    diagram_keywords: Optional[List[str]] = Field(
+        default_factory=list,
+        description="Search keywords used to find the diagram in the local image pool or Google Images."
+    )
+    # Populated by the backend after generation ─ not emitted by the LLM
+    diagram_links: Optional[List[str]] = Field(
+        default_factory=list,
+        description="Resolved image URLs (local or SerpAPI). Up to 3. Backend-populated, not LLM-generated."
+    )
+
 
 class MCQQuestion(BaseModel):
     question: str = Field(..., description="The multiple-choice question text")
@@ -10,6 +50,24 @@ class MCQQuestion(BaseModel):
     bloom_level: str = Field("apply", description="Bloom's taxonomy level requested")
     source_reference: Optional[str] = Field(None, description="Page number or section reference from source PDF")
     source_chunk_ids: Optional[List[str]] = Field(default_factory=list, description="Identifiers of retrieved source chunks")
+
+    # ── Visual fields ──
+    has_visual: bool = Field(
+        False,
+        description="True if this question is accompanied by a diagram, graph, structure, or visual aid."
+    )
+    visual_type: Optional[str] = Field(
+        None,
+        description=(
+            "Type of visual: 'graph' (maths/physics plotly chart), "
+            "'structure' (chemistry SMILES molecule), "
+            "or 'diagram' (biology image)."
+        )
+    )
+    visual_data: Optional[VisualData] = Field(
+        None,
+        description="Visual rendering data. Only present when has_visual=true."
+    )
 
     @field_validator("options")
     @classmethod

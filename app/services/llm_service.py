@@ -102,7 +102,7 @@ class LLMService:
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
             response_mime_type="application/json",
-            response_schema=MCQBatchResponse,
+            response_json_schema=MCQBatchResponse.model_json_schema(),
             temperature=0.7
         )
 

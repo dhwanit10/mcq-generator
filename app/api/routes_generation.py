@@ -26,6 +26,7 @@ async def generate_mcqs(
     difficulty: str = Form("medium", description="Difficulty level (easy, medium, hard)"),
     bloom_level: str = Form("apply", description="Bloom's taxonomy level"),
     question_type: str = Form("mcq", description="Question format"),
+    subject: Optional[str] = Form(None, description="Subject hint for visual prompt (maths, chemistry, physics, biology)"),
     questions_per_batch: Optional[int] = Form(None, description="Optional override for QUESTIONS_PER_BATCH"),
     max_concurrent_requests: Optional[int] = Form(None, description="Optional override for MAX_CONCURRENT_REQUESTS"),
     generation_mode: Optional[str] = Form(None, description="Optional override for GENERATION_MODE ('parallel' or 'sequential')")
@@ -65,7 +66,8 @@ async def generate_mcqs(
         question_type=question_type,
         questions_per_batch=questions_per_batch,
         max_concurrent_requests=max_concurrent_requests,
-        generation_mode=generation_mode
+        generation_mode=generation_mode,
+        subject=subject
     )
 
     logger.info(f"Generation job {job_id} launched for {number_of_questions} questions (mode={eff_mode}, concurrency={eff_concurrency}, batch_size={eff_batch_size}).")

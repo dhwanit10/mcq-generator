@@ -1,7 +1,7 @@
 import React from 'react';
 import LatexRenderer from './LatexRenderer';
-import PlotlyRenderer from './PlotlyRenderer';
-import { CheckCircle2, Bookmark, Award } from 'lucide-react';
+import VisualRenderer from './VisualRenderer';
+import { CheckCircle2, Bookmark, Award, Eye } from 'lucide-react';
 
 export default function QuestionCard({ question, index }) {
   if (!question) return null;
@@ -13,7 +13,10 @@ export default function QuestionCard({ question, index }) {
     explanation,
     difficulty,
     bloom_level,
-    source_reference
+    source_reference,
+    has_visual,
+    visual_type,
+    visual_data
   } = question;
 
   const optionLabels = ['A', 'B', 'C', 'D'];
@@ -37,7 +40,7 @@ export default function QuestionCard({ question, index }) {
         borderBottom: '1px solid #DFD5C4',
         paddingBottom: '0.6rem'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
           <span style={{
             backgroundColor: '#0B192C',
             color: '#FFFDF9',
@@ -75,6 +78,24 @@ export default function QuestionCard({ question, index }) {
             <Award size={12} />
             Bloom: {bloom_level || 'apply'}
           </span>
+
+          {(has_visual || visual_type) && (
+            <span style={{
+              backgroundColor: '#FFFDF9',
+              color: '#0B192C',
+              border: '1px solid #0B192C',
+              padding: '0.15rem 0.5rem',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              textTransform: 'capitalize',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}>
+              <Eye size={12} color="#0B192C" />
+              {visual_type ? `${visual_type}` : 'Visual'}
+            </span>
+          )}
         </div>
 
         {source_reference && (
@@ -104,8 +125,13 @@ export default function QuestionCard({ question, index }) {
         <LatexRenderer text={qText} />
       </h3>
 
-      {/* Plotly Graph if question text contains plot data */}
-      <PlotlyRenderer text={qText} />
+      {/* Visual Component: Plotly graphs, SMILES chemical structures, Biology diagrams */}
+      <VisualRenderer
+        hasVisual={has_visual}
+        visualType={visual_type}
+        visualData={visual_data}
+        qText={qText}
+      />
 
       {/* Options List */}
       <div style={{ display: 'grid', gap: '0.65rem', marginBottom: '1.25rem' }}>

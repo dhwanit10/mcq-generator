@@ -34,6 +34,17 @@ A high-performance, asynchronous FastAPI backend designed to demonstrate how **p
    - **Layer 4**: Optional LLM quality validation.
    - Dynamic bounded retries if validation rejects candidates until target count is reached.
 
+7. **Visual MCQ Generation & Multi-Modal Rendering**:
+   - **Maths & Physics (`graph`)**: Interactive Plotly graph JSON specs rendered client-side using Plotly.js.
+   - **Chemistry (`structure`)**: Chemical molecular structures depicted using SMILES strings rendered via SmilesDrawer into responsive vector SVGs.
+   - **Biology (`diagram`)**: Biological diagrams with weighted local image pool lookup (`/data/images/`), dynamic SerpAPI Google Images fallback targeting 3 images, and graceful empty-state handling.
+   - **LaTeX Expressions**: Inline and block math equations rendered seamlessly using KaTeX.
+
+8. **Cloud Keep-Alive & Frontend Integration**:
+   - Single-page React application (`/frontend`) featuring real-time WebSocket question delivery and live metrics.
+   - Automated 14-minute periodic health ping to keep free-tier cloud deployments (e.g., Render, Koyeb) warm and active.
+   - Centralized environment configuration via `frontend/.env` (`VITE_API_BASE_URL`).
+
 ---
 
 ## 🛠️ Project Structure
@@ -126,6 +137,9 @@ CHUNK_OVERLAP=150
 
 RETRIEVAL_TOP_K=15
 MAX_RETRIEVAL_CONTEXT_CHARS=30000
+
+# Biology Image Search (Optional SerpAPI fallback)
+SERPAPI_API_KEY=your_serpapi_api_key_here
 
 # Server Settings
 HOST=0.0.0.0
@@ -221,15 +235,29 @@ Connect client to `ws://localhost:8000/api/v1/ws/generate/{job_id}`.
 
 ---
 
-## 🔧 Local Server Startup (Windows)
+## 🔧 Local Development & Startup
 
-### 1. Activate Environment
+### 1. Backend Server (FastAPI)
 ```powershell
+# Activate Environment
 .\venv\Scripts\Activate.ps1
-```
 
-### 2. Start Backend Server
-```powershell
+# Run Uvicorn Server
 venv\Scripts\python.exe run.py
 ```
-*Server runs at `http://localhost:8000` (Swagger UI at `http://localhost:8000/docs`).*
+*Backend runs at `http://localhost:8000` (API docs at `http://localhost:8000/docs`).*
+
+### 2. Frontend Application (React + Vite)
+```powershell
+cd frontend
+
+# Install dependencies (Plotly, KaTeX, SmilesDrawer, Lucide)
+npm install
+
+# Configure environment in frontend/.env (defaults to http://localhost:8000)
+# VITE_API_BASE_URL=http://localhost:8000
+
+# Start development server
+npm run dev
+```
+*Frontend runs at `http://localhost:5173`.*

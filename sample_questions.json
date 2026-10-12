@@ -1,0 +1,238 @@
+{
+  "_description": "Sample MCQ questions demonstrating all subjects and visual types. Use this as a reference for question structure.",
+  "questions": [
+
+    {
+      "_subject": "MATHS — No visual",
+      "question": "What is the value of the integral from 0 to 1 of x squared dx?",
+      "options": ["1/4", "1/3", "1/2", "1"],
+      "correct_option": 1,
+      "explanation": "The integral of x^2 from 0 to 1 is [x^3/3] from 0 to 1 = 1/3.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "source_reference": "Page 12",
+      "source_chunk_ids": [],
+      "has_visual": false,
+      "visual_type": null,
+      "visual_data": null
+    },
+
+    {
+      "_subject": "MATHS — Graph visual (Plotly)",
+      "question": "The graph below shows the function f(x). At which value of x does f(x) reach its maximum?",
+      "options": ["x = 0", "x = 1", "x = -1", "x = 2"],
+      "correct_option": 1,
+      "explanation": "f(x) = -(x-1)^2 + 4 is a downward parabola with vertex at x=1, which is the maximum.",
+      "difficulty": "medium",
+      "bloom_level": "analyze",
+      "source_reference": "Page 24",
+      "source_chunk_ids": [],
+      "has_visual": true,
+      "visual_type": "graph",
+      "visual_data": {
+        "plotly_spec": {
+          "data": [
+            {
+              "type": "scatter",
+              "mode": "lines",
+              "x": [-2, -1, 0, 1, 2, 3, 4],
+              "y": [-5, 0, 3, 4, 3, 0, -5],
+              "line": { "color": "#990000", "width": 3 },
+              "name": "f(x) = -(x-1)^2 + 4"
+            }
+          ],
+          "layout": {
+            "title": { "text": "Graph of f(x)" },
+            "xaxis": { "title": "x" },
+            "yaxis": { "title": "f(x)" },
+            "showlegend": true
+          }
+        },
+        "smiles": null,
+        "diagram_name": null,
+        "diagram_keywords": [],
+        "diagram_links": []
+      }
+    },
+
+    {
+      "_subject": "PHYSICS — Graph visual (velocity-time)",
+      "question": "The velocity-time graph below represents an object's motion. What is the acceleration during t=0 to t=4 seconds?",
+      "options": ["2.5 m/s2", "5 m/s2", "10 m/s2", "0 m/s2"],
+      "correct_option": 0,
+      "explanation": "Acceleration = change_in_v / change_in_t = (20-10)/(4-0) = 2.5 m/s2. The gradient of a v-t graph gives acceleration.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "source_reference": "Page 8",
+      "source_chunk_ids": [],
+      "has_visual": true,
+      "visual_type": "graph",
+      "visual_data": {
+        "plotly_spec": {
+          "data": [
+            {
+              "type": "scatter",
+              "mode": "lines+markers",
+              "x": [0, 4, 8, 12],
+              "y": [10, 20, 20, 5],
+              "line": { "color": "#0B192C", "width": 3 },
+              "marker": { "size": 8 },
+              "name": "Velocity (m/s)"
+            }
+          ],
+          "layout": {
+            "title": { "text": "Velocity-Time Graph" },
+            "xaxis": { "title": "Time (s)" },
+            "yaxis": { "title": "Velocity (m/s)" },
+            "showlegend": true
+          }
+        },
+        "smiles": null,
+        "diagram_name": null,
+        "diagram_keywords": [],
+        "diagram_links": []
+      }
+    },
+
+    {
+      "_subject": "PHYSICS — No visual",
+      "question": "A body of mass 5 kg is acted upon by a net force of 20 N. What is its acceleration?",
+      "options": ["0.25 m/s2", "4 m/s2", "15 m/s2", "100 m/s2"],
+      "correct_option": 1,
+      "explanation": "By Newton's second law: a = F/m = 20/5 = 4 m/s2.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "source_reference": "Page 3",
+      "source_chunk_ids": [],
+      "has_visual": false,
+      "visual_type": null,
+      "visual_data": null
+    },
+
+    {
+      "_subject": "CHEMISTRY — No visual",
+      "question": "Which type of bond is formed between Na+ and Cl- in sodium chloride?",
+      "options": ["Covalent bond", "Metallic bond", "Ionic bond", "Hydrogen bond"],
+      "correct_option": 2,
+      "explanation": "NaCl is formed by electrostatic attraction between Na+ and Cl-, which is characteristic of an ionic bond.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "source_reference": "Page 5",
+      "source_chunk_ids": [],
+      "has_visual": false,
+      "visual_type": null,
+      "visual_data": null
+    },
+
+    {
+      "_subject": "CHEMISTRY — SMILES structure visual (Aspirin)",
+      "question": "The molecular structure shown below is used as a pain reliever. Which functional group is responsible for its analgesic activity?",
+      "options": ["Ester group", "Hydroxyl group", "Carboxylic acid group", "Amino group"],
+      "correct_option": 0,
+      "explanation": "The structure shown is Aspirin (acetylsalicylic acid, SMILES: CC(=O)Oc1ccccc1C(=O)O). The ester group is the acetylated form responsible for its analgesic effects.",
+      "difficulty": "hard",
+      "bloom_level": "analyze",
+      "source_reference": "Page 47",
+      "source_chunk_ids": [],
+      "has_visual": true,
+      "visual_type": "structure",
+      "visual_data": {
+        "plotly_spec": null,
+        "smiles": "CC(=O)Oc1ccccc1C(=O)O",
+        "diagram_name": null,
+        "diagram_keywords": [],
+        "diagram_links": []
+      }
+    },
+
+    {
+      "_subject": "CHEMISTRY — SMILES structure visual (Benzene)",
+      "question": "The aromatic structure shown below is widely used as a solvent. How many pi electrons does its ring contain?",
+      "options": ["2", "4", "6", "8"],
+      "correct_option": 2,
+      "explanation": "Benzene has 3 double bonds in its aromatic ring, contributing 6 pi electrons, satisfying Huckel's rule (4n+2, n=1).",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "source_reference": "Page 31",
+      "source_chunk_ids": [],
+      "has_visual": true,
+      "visual_type": "structure",
+      "visual_data": {
+        "plotly_spec": null,
+        "smiles": "c1ccccc1",
+        "diagram_name": null,
+        "diagram_keywords": [],
+        "diagram_links": []
+      }
+    },
+
+    {
+      "_subject": "BIOLOGY — No visual",
+      "question": "Which organelle is responsible for producing ATP through cellular respiration?",
+      "options": ["Ribosome", "Nucleus", "Mitochondria", "Golgi apparatus"],
+      "correct_option": 2,
+      "explanation": "Mitochondria are the sites of aerobic respiration (Krebs cycle + oxidative phosphorylation), producing the majority of cellular ATP.",
+      "difficulty": "easy",
+      "bloom_level": "remember",
+      "source_reference": "Page 2",
+      "source_chunk_ids": [],
+      "has_visual": false,
+      "visual_type": null,
+      "visual_data": null
+    },
+
+    {
+      "_subject": "BIOLOGY — Diagram visual (Mitosis)",
+      "question": "In the diagram of mitosis shown, which stage is characterised by chromosomes aligning along the cell's equatorial plate?",
+      "options": ["Prophase", "Metaphase", "Anaphase", "Telophase"],
+      "correct_option": 1,
+      "explanation": "During Metaphase, chromosomes align at the metaphase plate, facilitated by spindle fibres attached to centromeres.",
+      "difficulty": "medium",
+      "bloom_level": "understand",
+      "source_reference": "Page 18",
+      "source_chunk_ids": [],
+      "has_visual": true,
+      "visual_type": "diagram",
+      "visual_data": {
+        "plotly_spec": null,
+        "smiles": null,
+        "diagram_name": "Stages of Mitosis",
+        "diagram_keywords": ["mitosis", "cell division", "metaphase", "chromosome", "spindle"],
+        "diagram_links": ["/data/images/mitosis.jpg"]
+      }
+    },
+
+    {
+      "_subject": "BIOLOGY — Diagram visual (Heart, SerpAPI fallback example)",
+      "question": "Based on the human heart anatomy diagram, which vessel carries oxygenated blood from the lungs to the left atrium?",
+      "options": ["Pulmonary artery", "Pulmonary vein", "Aorta", "Vena cava"],
+      "correct_option": 1,
+      "explanation": "Pulmonary veins carry oxygenated blood from the lungs to the left atrium. This is the only vein in the body that carries oxygenated blood.",
+      "difficulty": "medium",
+      "bloom_level": "apply",
+      "source_reference": "Page 55",
+      "source_chunk_ids": [],
+      "has_visual": true,
+      "visual_type": "diagram",
+      "visual_data": {
+        "plotly_spec": null,
+        "smiles": null,
+        "diagram_name": "Human Heart Anatomy",
+        "diagram_keywords": ["heart", "pulmonary vein", "atrium", "circulation", "anatomy"],
+        "diagram_links": ["/data/images/human_heart.png"]
+      }
+    }
+
+  ],
+
+  "_notes": {
+    "has_visual": "Boolean. True = question is accompanied by a visual. False = text-only question.",
+    "visual_type": "One of: 'graph' (Plotly JSON for maths/physics), 'structure' (SMILES for chemistry), 'diagram' (image for biology). Null when has_visual=false.",
+    "visual_data.plotly_spec": "Plotly-compatible JSON object with 'data' (traces) and 'layout'. Render with Plotly.js.",
+    "visual_data.smiles": "SMILES string for molecular structure. Render with SmilesDrawer.js or RDKit.js.",
+    "visual_data.diagram_name": "Canonical biology diagram name used for local image pool lookup.",
+    "visual_data.diagram_keywords": "Keywords used for local image pool search and SerpAPI fallback.",
+    "visual_data.diagram_links": "Resolved image URLs (backend-populated). Local: /data/images/<file>. SerpAPI: full HTTPS thumbnail URL. Up to 3 links.",
+    "image_resolution_order": "1. Search app/data/image_metadata.json using diagram_name + keywords. 2. If no local match, fall back to SerpAPI Google Images search."
+  }
+}

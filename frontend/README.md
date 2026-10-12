@@ -1,16 +1,39 @@
-# React + Vite
+# MCQ Generator Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Interactive React + Vite frontend for high-throughput AI MCQ generation with real-time WebSocket question streaming, live metrics, and rich multi-modal visual rendering.
 
-Currently, two official plugins are available:
+## 🎨 Visual Rendering Modules
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Interactive Graphs (`PlotlyRenderer`)**: Renders interactive Plotly JSON graph specifications for mathematics and physics questions.
+- **Chemical Structures (`SmilesRenderer`)**: Renders SMILES molecular structures using SmilesDrawer into clean, centered, scalable vector SVGs.
+- **Biological Diagrams (`DiagramRenderer`)**: Renders biological diagrams from the backend local image pool or SerpAPI fallbacks, with graceful empty-state handling.
+- **LaTeX Math (`LatexRenderer`)**: Renders inline `$...$` and block `$$...$$` mathematical notations via KaTeX.
 
-## React Compiler
+## 🛠️ Environment Configuration
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Create or update `.env` in the `frontend/` folder:
 
-## Expanding the Oxlint configuration
+```env
+# Backend API Base URL (adjust for production deployment, e.g. https://your-backend.onrender.com)
+VITE_API_BASE_URL=http://localhost:8000
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+# Optional: WebSocket Base URL (automatically inferred as ws:// or wss:// from VITE_API_BASE_URL if omitted)
+# VITE_WS_BASE_URL=ws://localhost:8000
+```
+
+## ⏱️ Health Keep-Alive
+
+The application performs an initial health check on load, followed by a periodic keep-alive ping every **14 minutes** to prevent free-tier cloud instances (e.g., Render, Koyeb) from idling.
+
+## 🚀 Development & Build
+
+```bash
+# Install dependencies
+npm install
+
+# Start local Vite dev server (http://localhost:5173)
+npm run dev
+
+# Build production bundle
+npm run build
+```

@@ -7,8 +7,8 @@ import QuestionCard from './components/QuestionCard';
 import MetricsPanel from './components/MetricsPanel';
 import { RefreshCw, Database, Zap } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:8000';
-const WS_BASE_URL = 'ws://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || API_BASE_URL.replace(/^http/, 'ws');
 
 export default function App() {
   // ── App-level tab ──
@@ -32,9 +32,17 @@ export default function App() {
   const wsRef = useRef(null);
   const timerRef = useRef(null);
 
-  // ── Health check on mount ──
+  // ── Health check on mount & periodic keep-alive ping every 14 minutes ──
   useEffect(() => {
     checkHealth();
+
+    const FOURTEEN_MINUTES_MS = 14 * 60 * 1000;
+    const interval = setInterval(() => {
+      console.log('[Health] Periodic 14-min keep-alive ping');
+      checkHealth();
+    }, FOURTEEN_MINUTES_MS);
+
+    return () => clearInterval(interval);
   }, []);
 
   const checkHealth = async () => {

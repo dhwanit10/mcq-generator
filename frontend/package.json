@@ -15,7 +15,8 @@
     "plotly.js-dist-min": "^4.1.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-plotly.js": "^4.1.0"
+    "react-plotly.js": "^4.1.0",
+    "smiles-drawer": "^2.4.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

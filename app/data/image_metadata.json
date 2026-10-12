@@ -1,0 +1,86 @@
+[
+  {
+    "id": "bio_001",
+    "title": "Stages of Mitosis",
+    "subject": "Biology",
+    "tags": ["mitosis", "cell division", "prophase", "metaphase", "anaphase", "telophase", "chromosome"],
+    "filename": "mitosis.jpg"
+  },
+  {
+    "id": "bio_002",
+    "title": "Human Heart Anatomy",
+    "subject": "Biology",
+    "tags": ["heart", "circulation", "pulmonary artery", "aorta", "ventricle", "atrium", "anatomy", "cardiac"],
+    "filename": "human_heart.png"
+  },
+  {
+    "id": "bio_003",
+    "title": "Plant Cell Structure",
+    "subject": "Biology",
+    "tags": ["plant cell", "cell wall", "chloroplast", "vacuole", "cell structure", "organelle", "nucleus"],
+    "filename": "plant_cell.jpg"
+  },
+  {
+    "id": "bio_004",
+    "title": "Animal Cell Structure",
+    "subject": "Biology",
+    "tags": ["animal cell", "mitochondria", "ribosome", "endoplasmic reticulum", "golgi", "organelle", "cell"],
+    "filename": "animal_cell.jpg"
+  },
+  {
+    "id": "bio_005",
+    "title": "DNA Double Helix Structure",
+    "subject": "Biology",
+    "tags": ["DNA", "double helix", "nucleotide", "base pair", "adenine", "thymine", "guanine", "cytosine", "genetics"],
+    "filename": "dna_helix.jpg"
+  },
+  {
+    "id": "bio_006",
+    "title": "Meiosis Stages",
+    "subject": "Biology",
+    "tags": ["meiosis", "meiosis I", "meiosis II", "gamete", "crossing over", "chromosome", "reduction division"],
+    "filename": "meiosis.jpg"
+  },
+  {
+    "id": "bio_007",
+    "title": "Digestive System Diagram",
+    "subject": "Biology",
+    "tags": ["digestive system", "stomach", "small intestine", "large intestine", "oesophagus", "liver", "pancreas"],
+    "filename": "digestive_system.jpg"
+  },
+  {
+    "id": "bio_008",
+    "title": "Respiratory System",
+    "subject": "Biology",
+    "tags": ["respiratory", "lungs", "alveoli", "trachea", "bronchi", "breathing", "gas exchange", "diaphragm"],
+    "filename": "respiratory_system.jpg"
+  },
+  {
+    "id": "bio_009",
+    "title": "Neuron Structure",
+    "subject": "Biology",
+    "tags": ["neuron", "nerve cell", "axon", "dendrite", "synapse", "myelin sheath", "nervous system"],
+    "filename": "neuron.jpg"
+  },
+  {
+    "id": "bio_010",
+    "title": "Photosynthesis Process",
+    "subject": "Biology",
+    "tags": ["photosynthesis", "chloroplast", "light reaction", "Calvin cycle", "glucose", "CO2", "oxygen", "chlorophyll"],
+    "filename": "photosynthesis.jpg"
+  },
+  {
+    "id": "bio_011",
+    "title": "Blood Cell Types",
+    "subject": "Biology",
+    "tags": ["blood cell", "red blood cell", "white blood cell", "platelet", "erythrocyte", "leucocyte", "haemoglobin"],
+    "filename": "blood_cells.jpg"
+  },
+  {
+    "id": "bio_012",
+    "title": "Kidney Structure and Nephron",
+    "subject": "Biology",
+    "tags": ["kidney", "nephron", "glomerulus", "renal tubule", "filtration", "excretion", "urine", "Bowman's capsule"],
+    "filename": "kidney_nephron.jpg"
+  }
+]

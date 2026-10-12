@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Image as ImageIcon, ImageOff } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || import.meta.env?.VITE_API_URL || 'http://localhost:8000';
 
 /**
  * Renders biology diagrams or reference images with zero latency.

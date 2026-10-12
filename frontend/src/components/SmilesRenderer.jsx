@@ -3,6 +3,7 @@ import SmilesDrawer from 'smiles-drawer';
 
 /**
  * Renders chemical molecular structures using SmilesDrawer.
+ * Preserves SmilesDrawer's native centered viewBox for complete structure visibility.
  * Adheres strictly to the cream/navy/crimson palette with zero latency.
  */
 export default function SmilesRenderer({ smiles }) {
@@ -15,12 +16,13 @@ export default function SmilesRenderer({ smiles }) {
 
     try {
       const drawerWidth = 360;
-      const drawerHeight = 220;
+      const drawerHeight = 240;
 
       const drawer = new SmilesDrawer.SvgDrawer({
         width: drawerWidth,
         height: drawerHeight,
         bondThickness: 1.5,
+        padding: 20,
         themes: {
           light: {
             C: '#0B192C',
@@ -46,10 +48,11 @@ export default function SmilesRenderer({ smiles }) {
           try {
             const svg = drawer.draw(tree, null, 'light');
             if (containerRef.current && svg) {
-              svg.setAttribute('viewBox', `0 0 ${drawerWidth} ${drawerHeight}`);
-              svg.style.maxWidth = '100%';
+              // Preserve the native viewBox calculated by SmilesDrawer so the molecule is fully centered
+              svg.style.width = '100%';
               svg.style.height = 'auto';
-              svg.style.maxHeight = '240px';
+              svg.style.maxWidth = `${drawerWidth}px`;
+              svg.style.maxHeight = `${drawerHeight}px`;
               svg.style.display = 'block';
               svg.style.margin = '0 auto';
 
@@ -116,12 +119,13 @@ export default function SmilesRenderer({ smiles }) {
       <div
         ref={containerRef}
         style={{
-          minHeight: '180px',
+          minHeight: '220px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: '#FBF9F4',
-          padding: '0.5rem'
+          padding: '1rem',
+          boxSizing: 'border-box'
         }}
       >
         {error ? (

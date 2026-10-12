@@ -261,3 +261,14 @@ npm install
 npm run dev
 ```
 *Frontend runs at `http://localhost:5173`.*
+
+### 3. Docker Production Deployment
+```bash
+# Build the Docker image
+docker build -t mcq-generator-backend .
+
+# Run container with environment file
+docker run -d -p 8000:8000 --env-file .env --name mcq-backend mcq-generator-backend
+```
+*Container binds to port `8000` with automated health checks on `/api/v1/health`.*
+

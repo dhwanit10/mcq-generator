@@ -15,6 +15,14 @@ DATA_DIR = BASE_DIR / "data"
 IMAGES_DIR = DATA_DIR / "images"
 METADATA_FILE = DATA_DIR / "image_metadata.json"
 
+# Generic words to exclude from keyword/metadata match calculation
+STOP_WORDS = {
+    "diagram", "structure", "system", "process", "types",
+    "and", "the", "of", "in", "for", "a", "an", "stages",
+    "anatomy", "function", "figure", "label", "labelled",
+    "cycle", "human"
+}
+
 # Loaded once at module level
 _local_metadata: Optional[List[dict]] = None
 
@@ -40,32 +48,27 @@ def _load_metadata() -> List[dict]:
 
 def search_local_images(keywords: List[str], diagram_name: str, limit: int = 3) -> List[str]:
     """
-    Searches the local image pool using diagram_name and keywords.
-    Returns a list of relative HTTP paths (/data/images/<filename>) for matched images.
-    Up to `limit` results.
+    Weights every entry in the local image pool against keywords and diagram_name.
+    Only returns images whose keywords / diagram name match metadata with a positive score.
+    Returns up to `limit` relative HTTP paths (/data/images/<filename>), sorted by score.
+    If no relevant image matches, returns an empty list.
     """
     metadata = _load_metadata()
     if not metadata:
         return []
 
-    # Build a single normalised query string from name + keywords
-    query_terms = set()
-    for kw in ([diagram_name] + (keywords or [])):
-        query_terms.update(kw.strip().casefold().split())
+    norm_keywords = [
+        kw.strip().casefold()
+        for kw in (keywords or [])
+        if kw and kw.strip().casefold() not in STOP_WORDS
+    ]
+    diag_clean = (diagram_name or "").strip().casefold()
+    diag_tokens = [w for w in diag_clean.split() if w not in STOP_WORDS and len(w) > 2]
 
-    results: List[str] = []
+    scored_entries = []
+
     for item in metadata:
         if not isinstance(item, dict):
-            continue
-
-        title = str(item.get("title", "")).casefold()
-        item_subject = str(item.get("subject", "")).casefold()
-        tags = [str(t).casefold() for t in item.get("tags", []) if t]
-        searchable = " ".join([title, item_subject] + tags)
-
-        # Score: count how many query terms appear in searchable text
-        score = sum(1 for term in query_terms if term in searchable)
-        if score == 0:
             continue
 
         filename = item.get("filename", "")
@@ -74,43 +77,80 @@ def search_local_images(keywords: List[str], diagram_name: str, limit: int = 3) 
 
         image_path = IMAGES_DIR / filename
         if not image_path.is_file():
-            logger.debug(f"Local image file missing: {image_path}")
             continue
 
-        # Return a static URL path served by the FastAPI static mount
-        results.append(f"/data/images/{filename}")
-        if len(results) >= limit:
-            break
+        title = str(item.get("title", "")).casefold()
+        tags = [str(t).casefold() for t in item.get("tags", []) if t]
+        tags_set = set(tags)
+        title_tokens = [w for w in title.split() if w not in STOP_WORDS and len(w) > 2]
 
-    logger.info(f"Local image search for '{diagram_name}' returned {len(results)} result(s).")
+        score = 0
+
+        # 1. Topic title matching
+        if diag_clean == title:
+            score += 20
+        elif diag_clean and (diag_clean in title or title in diag_clean):
+            score += 15
+        else:
+            title_overlap = set(diag_tokens) & set(title_tokens)
+            if title_overlap:
+                score += len(title_overlap) * 10
+
+        # 2. Keyword matching with tags and title
+        for kw in norm_keywords:
+            if kw in tags_set:
+                score += 6
+            elif any(kw in t or t in kw for t in tags):
+                score += 4
+            elif kw in title:
+                score += 5
+            else:
+                kw_words = [w for w in kw.split() if w not in STOP_WORDS and len(w) > 2]
+                if kw_words and any(w in tags or w in title for w in kw_words):
+                    score += 1
+
+        # Must have a significant match score (>= 8) to be considered a genuine match
+        if score >= 8:
+            scored_entries.append((score, f"/data/images/{filename}"))
+
+    # Sort descending by score
+    scored_entries.sort(key=lambda x: x[0], reverse=True)
+    results = [entry[1] for entry in scored_entries[:limit]]
+
+    logger.info(f"Local image search for '{diagram_name}' returned {len(results)} scored result(s).")
     return results
 
 
 async def search_serpapi_images(diagram_name: str, keywords: List[str], limit: int = 3) -> List[str]:
     """
-    Falls back to SerpAPI Google Images search when local pool has no match.
-    Returns up to `limit` thumbnail URLs.
+    Searches SerpAPI using only the diagram name, inspects the top 7 Google Images results,
+    matches keywords against each result's title/snippet/source, and returns the images with the most matches.
+    If no result matches the keywords, returns an empty list.
     """
     api_key = settings.SERPAPI_API_KEY
     if not api_key:
         logger.warning("SERPAPI_API_KEY not configured. Skipping SerpAPI image search.")
         return []
 
-    query = diagram_name
-    if keywords:
-        query = f"{diagram_name} {' '.join(keywords[:3])}"
+    query = (diagram_name or "").strip()
+    if not query:
+        norm_kw = [k for k in (keywords or []) if k.casefold() not in STOP_WORDS]
+        if norm_kw:
+            query = " ".join(norm_kw[:2])
+        else:
+            return []
 
     params = {
         "engine": "google_images",
-        "q": query.strip(),
+        "q": query,
         "api_key": api_key,
         "hl": "en",
         "gl": "in",
-        "num": str(limit * 3),  # fetch more, pick best
+        "num": "10",
     }
 
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=8.0) as client:
             response = await client.get("https://serpapi.com/search.json", params=params)
             response.raise_for_status()
             data = response.json()
@@ -125,16 +165,62 @@ async def search_serpapi_images(diagram_name: str, keywords: List[str], limit: i
         logger.warning(f"SerpAPI error: {data['error']}")
         return []
 
-    urls: List[str] = []
-    for item in data.get("images_results", []):
+    raw_candidates = data.get("images_results", [])
+    if not raw_candidates:
+        return []
+
+    # Inspect the top 7 results
+    top_7 = raw_candidates[:7]
+
+    norm_keywords = [
+        kw.strip().casefold()
+        for kw in (keywords or [])
+        if kw and kw.strip().casefold() not in STOP_WORDS
+    ]
+    diag_words = [w for w in query.casefold().split() if w not in STOP_WORDS and len(w) > 2]
+
+    scored_images = []
+
+    for item in top_7:
         url = item.get("thumbnail") or item.get("original")
-        if url:
-            urls.append(url)
-        if len(urls) >= limit:
+        if not url:
+            continue
+
+        item_title = str(item.get("title", "")).casefold()
+        item_snippet = str(item.get("snippet", "")).casefold()
+        item_source = str(item.get("source", "")).casefold()
+        corpus = f"{item_title} {item_snippet} {item_source}"
+
+        score = 0
+        for kw in norm_keywords:
+            if kw in corpus:
+                score += 3
+            else:
+                words = [w for w in kw.split() if w not in STOP_WORDS and len(w) > 2]
+                if words and any(w in corpus for w in words):
+                    score += 1
+
+        for dw in diag_words:
+            if dw in corpus:
+                score += 2
+
+        if score > 0:
+            scored_images.append((score, url))
+
+    # Sort images by match score in descending order
+    scored_images.sort(key=lambda x: x[0], reverse=True)
+
+    results = []
+    seen = set()
+    for _, url in scored_images:
+        if url not in seen:
+            seen.add(url)
+            results.append(url)
+        if len(results) >= limit:
             break
 
-    logger.info(f"SerpAPI returned {len(urls)} image(s) for '{query}'.")
-    return urls
+    logger.info(f"SerpAPI keyword matching for '{query}' returned {len(results)} image(s) from top 7.")
+    return results
 
 
 async def resolve_biology_diagram_links(
@@ -144,19 +230,34 @@ async def resolve_biology_diagram_links(
 ) -> List[str]:
     """
     Primary entry point for biology image resolution.
-    1. Check local image pool first.
-    2. Fall back to SerpAPI if no local match.
-    Returns up to `limit` image URLs.
+    1. Check local image pool first using weighted search.
+    2. If fewer than `limit` images are found locally (e.g. 1 found), query SerpAPI
+       for the remaining images needed so the total reaches up to `limit` (default 3).
+    3. If no images are found in either local or SerpAPI, returns an empty list [].
     """
-    # 1. Local search
+    # 1. Local weighted search
     local_results = search_local_images(keywords=keywords, diagram_name=diagram_name, limit=limit)
-    if local_results:
-        return local_results[:limit]
 
-    # 2. SerpAPI fallback
-    serpapi_results = await search_serpapi_images(
-        diagram_name=diagram_name,
-        keywords=keywords,
-        limit=limit
-    )
-    return serpapi_results[:limit]
+    needed = limit - len(local_results)
+    serpapi_results: List[str] = []
+
+    # 2. Query SerpAPI for remaining needed images
+    if needed > 0:
+        serpapi_results = await search_serpapi_images(
+            diagram_name=diagram_name,
+            keywords=keywords,
+            limit=needed
+        )
+
+    # 3. Combine and deduplicate
+    combined: List[str] = []
+    seen = set()
+    for link in (local_results + serpapi_results):
+        if link and link not in seen:
+            seen.add(link)
+            combined.append(link)
+        if len(combined) >= limit:
+            break
+
+    # 4. Return combined images or empty list if none found
+    return combined

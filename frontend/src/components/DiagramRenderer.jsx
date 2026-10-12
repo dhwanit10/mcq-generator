@@ -14,7 +14,6 @@ export default function DiagramRenderer({ diagramName, diagramLinks = [], keywor
     ? diagramLinks.filter(Boolean)
     : (diagramLinks ? [diagramLinks] : []);
 
-  if (links.length === 0 && !diagramName) return null;
 
   const resolveUrl = (url) => {
     if (!url) return '';
@@ -169,19 +168,20 @@ export default function DiagramRenderer({ diagramName, diagramLinks = [], keywor
         </div>
       ) : (
         <div style={{
-          minHeight: '100px',
+          minHeight: '70px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: '#FBF9F4',
           border: '1px dashed #DFD5C4',
           padding: '1rem',
-          color: '#0B192C',
+          color: '#6E7C8C',
           fontSize: '0.85rem',
+          fontStyle: 'italic',
           gap: '0.5rem'
         }}>
-          <ImageIcon size={18} color="#0B192C" />
-          <span>Diagram Reference: <strong>{diagramName}</strong></span>
+          <ImageOff size={18} color="#990000" />
+          <span>No relevant images found</span>
         </div>
       )}
     </div>

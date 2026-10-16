@@ -134,3 +134,51 @@ async def generate_mcqs_from_notes(
         total_requested=req.number_of_questions,
         websocket_path=ws_path
     )
+
+
+@router.post("/mobile/generate-mcqs-from-notes", response_model=GenerateFromNotesResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/generate-mcqs-from-notes-mobile", response_model=GenerateFromNotesResponse, status_code=status.HTTP_202_ACCEPTED)
+async def generate_mcqs_from_notes_mobile(
+    req: GenerateFromNotesRequest,
+    background_tasks: BackgroundTasks
+):
+    """
+    Dedicated Mobile RAG MCQ generation endpoint.
+    Uses progressive batch sizes (1, 3, 5, 7, 9, 10...) so mobile clients receive the 1st MCQ
+    almost instantly with 0 initial wait time.
+    """
+    job_id = str(uuid.uuid4())[:12]
+    eff_concurrency = req.max_concurrent_requests or settings.MAX_CONCURRENT_REQUESTS
+    eff_mode = req.generation_mode or settings.GENERATION_MODE
+
+    job = await job_manager.create_job(
+        job_id=job_id,
+        requested_questions=req.number_of_questions,
+        concurrency=eff_concurrency,
+        batch_size=1,
+        generation_mode=eff_mode
+    )
+
+    background_tasks.add_task(
+        generation_orchestrator.run_rag_generation_job,
+        job_id=job_id,
+        subject=req.subject,
+        topic=req.topic,
+        difficulty=req.difficulty,
+        bloom_level=req.bloom_level,
+        question_type=req.question_type,
+        questions_per_batch=req.questions_per_batch,
+        max_concurrent_requests=req.max_concurrent_requests,
+        generation_mode=req.generation_mode,
+        is_mobile=True
+    )
+
+    ws_path = f"/api/v1/ws/generate/{job_id}"
+    logger.info(f"[Mobile API] RAG MCQ Generation job {job_id} launched for subject='{req.subject}', topic='{req.topic}' ({req.number_of_questions} questions) with progressive batching.")
+
+    return GenerateFromNotesResponse(
+        job_id=job_id,
+        status="started",
+        total_requested=req.number_of_questions,
+        websocket_path=ws_path
+    )

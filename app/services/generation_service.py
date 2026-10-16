@@ -16,6 +16,25 @@ from app.services.biology_image_service import resolve_biology_diagram_links
 logger = logging.getLogger(__name__)
 
 
+def compute_mobile_batch_sizes(target_count: int) -> List[int]:
+    """
+    Computes progressive batch sizes starting with 1 MCQ for near-instant rendering on mobile,
+    increasing to 3, 5, 7, 9, and capping at 10 MCQs per batch.
+    """
+    sizes = []
+    current_size = 1
+    rem = target_count
+    while rem > 0:
+        sz = min(current_size, rem)
+        sizes.append(sz)
+        rem -= sz
+        if current_size < 10:
+            current_size = min(10, current_size + 2)
+        else:
+            current_size = 10
+    return sizes
+
+
 class GenerationOrchestrator:
     """
     High-Throughput MCQ Generation Orchestrator supporting:
@@ -27,6 +46,7 @@ class GenerationOrchestrator:
     - Dynamic over-generation and retries until target valid question count is met
     - Detailed latency, milestone, and throughput metrics tracking
     - Subject-aware visual question generation (graphs, SMILES, biology diagrams)
+    - Progressive mobile batching (1, 3, 5, 7, 9, 10...)
     """
 
     async def run_generation_job(
@@ -39,7 +59,8 @@ class GenerationOrchestrator:
         questions_per_batch: int = None,
         max_concurrent_requests: int = None,
         generation_mode: str = None,
-        subject: Optional[str] = None
+        subject: Optional[str] = None,
+        is_mobile: bool = False
     ):
         """Original direct PDF upload generation workflow."""
         job = await job_manager.get_job(job_id)
@@ -77,7 +98,8 @@ class GenerationOrchestrator:
                 concurrency=concurrency,
                 mode=mode,
                 start_time=start_time,
-                subject=subject
+                subject=subject,
+                is_mobile=is_mobile
             )
 
         except Exception as e:
@@ -96,7 +118,8 @@ class GenerationOrchestrator:
         question_type: str = "mcq",
         questions_per_batch: int = None,
         max_concurrent_requests: int = None,
-        generation_mode: str = None
+        generation_mode: str = None,
+        is_mobile: bool = False
     ):
         """RAG generation workflow retrieving evidence from Qdrant vector store."""
         job = await job_manager.get_job(job_id)
@@ -149,7 +172,8 @@ class GenerationOrchestrator:
                 concurrency=concurrency,
                 mode=mode,
                 start_time=start_time,
-                subject=subject
+                subject=subject,
+                is_mobile=is_mobile
             )
 
         except Exception as e:
@@ -168,7 +192,8 @@ class GenerationOrchestrator:
         concurrency: int,
         mode: str,
         start_time: float,
-        subject: Optional[str] = None
+        subject: Optional[str] = None,
+        is_mobile: bool = False
     ):
         duplicate_detector = DuplicateDetector(settings.DUPLICATE_SIMILARITY_THRESHOLD)
         validator = ValidationPipeline(duplicate_detector, doc_context)
@@ -183,8 +208,12 @@ class GenerationOrchestrator:
         })
 
         target_count = job.requested_questions
-        num_batches = (target_count + batch_size - 1) // batch_size
-        batch_sizes = [min(batch_size, target_count - i * batch_size) for i in range(num_batches)]
+        if is_mobile:
+            batch_sizes = compute_mobile_batch_sizes(target_count)
+            logger.info(f"Mobile progressive batch schedule for job {job.job_id}: {batch_sizes}")
+        else:
+            num_batches = (target_count + batch_size - 1) // batch_size
+            batch_sizes = [min(batch_size, target_count - i * batch_size) for i in range(num_batches)]
 
         if mode == "parallel":
             await self._generate_parallel(
